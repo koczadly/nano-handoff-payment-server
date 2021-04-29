@@ -84,12 +84,6 @@ public class Payment {
             throw new InvalidPaymentStateException("Payment is already in a finalized state.");
         }
         this.status = status;
-        if (status.isFinalState()) {
-            expiration = null;
-            if (status != Status.COMPLETED) {
-                handoffHash = null; // Allow hash to be used by another payment
-            }
-        }
     }
     
     public HexData getHandoffHash() {

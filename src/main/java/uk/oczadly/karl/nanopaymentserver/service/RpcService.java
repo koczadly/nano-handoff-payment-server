@@ -141,11 +141,11 @@ public class RpcService {
      */
     private RpcQueryException wrapException(Exception e) {
         if (e instanceof RpcException) {
-            throw new RpcQueryException("RPC exception occurred.", e);
+            throw new RpcQueryException("Unexpected RPC exception.", e);
         } else if (e instanceof IOException) {
-            throw new RpcQueryException("Couldn't communicate with node.", e);
+            throw new RpcQueryException("Node unreachable.", e);
         } else {
-            throw new RpcQueryException("Unknown RPC error!", e);
+            throw new RpcQueryException("Unknown error!", e);
         }
     }
 

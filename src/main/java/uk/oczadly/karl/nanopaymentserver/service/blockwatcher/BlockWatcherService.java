@@ -3,7 +3,6 @@ package uk.oczadly.karl.nanopaymentserver.service.blockwatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import uk.oczadly.karl.jnano.model.HexData;
 import uk.oczadly.karl.jnano.model.NanoAccount;
@@ -17,7 +16,6 @@ import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
 import uk.oczadly.karl.nanopaymentserver.service.RpcService;
 import uk.oczadly.karl.nanopaymentserver.util.BlockUtil;
 
-import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,19 +28,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * manually poll the blocks using block_info every 30 seconds to ensure transactions don't get stuck in limbo.
  */
 @Service
-public class BlockConfirmationWatcherService {
+public class BlockWatcherService {
     
-    private static final Logger log = LoggerFactory.getLogger(BlockConfirmationWatcherService.class);
+    private static final Logger log = LoggerFactory.getLogger(BlockWatcherService.class);
     
     @Autowired private PaymentProperties paymentProperties;
     @Autowired private PaymentService paymentService;
     @Autowired private RpcService rpcService;
     
     private final ConfirmationWebsocketClient wsClient;
-    private final Map<HexData, Payment> watchingBlocks = new ConcurrentHashMap<>();
+    private final Map<HexData, Payment> watchlist = new ConcurrentHashMap<>();
     
     @Autowired
-    public BlockConfirmationWatcherService(RpcService rpcService) {
+    public BlockWatcherService(RpcService rpcService) {
         this.wsClient = new ConfirmationWebsocketClient(rpcService, new ConfirmationListener());
         this.wsClient.connect(); // Initialize websocket connection
     }
@@ -50,20 +48,20 @@ public class BlockConfirmationWatcherService {
     
     public void watch(Payment payment) {
         log.debug("Watching hash {}", payment.getHandoffHash());
-        if (watchingBlocks.putIfAbsent(payment.getHandoffHash(), payment) == null) {
+        if (watchlist.putIfAbsent(payment.getHandoffHash(), payment) == null) {
             // Manually check confirmation via RPC
             checkForConfirmation(payment, payment.getHandoffHash());
         }
     }
-
+    
     public boolean unwatch(HexData hash) {
         log.debug("Removing hash {} from watchlist", hash);
-        return watchingBlocks.remove(hash) != null;
+        return watchlist.remove(hash) != null;
     }
     
     public void checkActivePaymentsForConfirmation() {
         log.debug("Polling all handoff blocks for confirmation...");
-        watchingBlocks.forEach((hash, payment) -> checkForConfirmation(payment, hash));
+        watchlist.forEach((hash, payment) -> checkForConfirmation(payment, hash));
     }
     
     public void checkForConfirmation(Payment payment, HexData hash) {
@@ -99,7 +97,7 @@ public class BlockConfirmationWatcherService {
     private class ConfirmationListener implements ConfirmationWebsocketClient.Listener {
         @Override
         public void onConfirmation(Block block, NanoAmount amount) {
-            Payment matchingPayment = watchingBlocks.get(block.getHash());
+            Payment matchingPayment = watchlist.get(block.getHash());
             if (matchingPayment != null) {
                 handleConfirmation(matchingPayment, block, amount);
             }

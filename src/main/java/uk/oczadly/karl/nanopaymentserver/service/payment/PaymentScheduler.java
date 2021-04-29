@@ -5,7 +5,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PaymentServiceScheduler {
+public class PaymentScheduler {
     
     @Autowired private PaymentService paymentService;
     

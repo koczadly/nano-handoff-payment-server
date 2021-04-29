@@ -10,14 +10,12 @@ import org.springframework.stereotype.Component;
 import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
 import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
 
-import java.util.List;
-
 @Component
 public class BlockWatcherScheduler implements ApplicationRunner {
     
     private static final Logger log = LoggerFactory.getLogger(BlockWatcherScheduler.class);
     
-    @Autowired private BlockConfirmationWatcherService blockWatcherService;
+    @Autowired private BlockWatcherService blockWatcherService;
     @Autowired private PaymentService paymentService;
     
     
@@ -25,7 +23,7 @@ public class BlockWatcherScheduler implements ApplicationRunner {
      * Run on app startup.
      */
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
         // Watch all blocks on startup (load from database)
         int loadCount = 0;
         for (Payment payment : paymentService.getActivePayments()) {

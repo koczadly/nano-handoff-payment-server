@@ -22,7 +22,7 @@ import uk.oczadly.karl.nanopaymentserver.exception.InvalidPaymentStateException;
 import uk.oczadly.karl.nanopaymentserver.exception.PaymentNotFoundException;
 import uk.oczadly.karl.nanopaymentserver.properties.HandoffProperties;
 import uk.oczadly.karl.nanopaymentserver.properties.PaymentProperties;
-import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockConfirmationWatcherService;
+import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockWatcherService;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +38,7 @@ public class PaymentService {
     @Autowired private HandoffProperties handoffProperties;
     @Autowired private PaymentProperties paymentProperties;
     @Autowired private PaymentRepository paymentRepo;
+    @Autowired private BlockWatcherService blockWatcherService;
     
     private final Object repoMutex = new Object(); //todo: replace with db-provided transactional locking
     
@@ -198,13 +199,21 @@ public class PaymentService {
         }
     }
     
-    
     private Payment save(Payment payment) {
-        synchronized (repoMutex) {
-            payment = paymentRepo.save(payment);
+        if (payment.getStatus().isFinalState()) {
+            // Stop watching block confirmations
+            if (payment.getHandoffHash() != null) {
+                blockWatcherService.unwatch(payment.getHandoffHash());
+            }
+            // Remove redundant parameters
+            payment.setExpiration(null);
+            if (payment.getStatus() != Payment.Status.COMPLETED) {
+                payment.setHandoffHash(null); // Allow hash to be used by another payment
+            }
         }
-        //todo need to remove payment from watcher
-        return payment;
+        synchronized (repoMutex) {
+            return paymentRepo.save(payment);
+        }
     }
     
 }

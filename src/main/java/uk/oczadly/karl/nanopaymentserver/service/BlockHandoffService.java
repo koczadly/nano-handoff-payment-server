@@ -18,7 +18,7 @@ import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
 import uk.oczadly.karl.nanopaymentserver.exception.HandoffException;
 import uk.oczadly.karl.nanopaymentserver.exception.RpcQueryException;
 import uk.oczadly.karl.nanopaymentserver.properties.HandoffProperties;
-import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockConfirmationWatcherService;
+import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockWatcherService;
 import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
 
 import java.util.Optional;
@@ -34,7 +34,7 @@ public class BlockHandoffService {
     @Autowired private HandoffProperties handoffProperties;
     @Autowired private RpcService rpcService;
     @Autowired private PaymentService paymentService;
-    @Autowired private BlockConfirmationWatcherService blockWatcherService;
+    @Autowired private BlockWatcherService blockWatcherService;
     
     private final ExecutorService blockPublishExecutor = Executors.newSingleThreadExecutor();
     
