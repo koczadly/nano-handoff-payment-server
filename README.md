@@ -6,16 +6,18 @@
   - Build and release executable JAR (including properties file)
   - Include documentation on REST endpoints offered by this app
 - Improvements
-  - Refactor circular service dependency between `PaymentService` <--> `BlockWatcherService`
+  - Refactor circular service dependency between `PaymentService` &hoarr; `BlockWatcherService`
   - Add unit/integration tests where appropriate
-  - Add `/payment/wait` REST function which blocks until payment is finalized
+  - REST API
+    - Add *wait* endpoint which blocks until payment is finalized
+    - Add *cancel* endpoint which cancels an ongoing payment
   - Add additional real-time checks for invalidated blocks (eg. fork block is confirmed) instead
     of only relying on timeout
 
 
 
 ## HTTP API
-<details><summary>New payment » <b><i>POST</i></b> <code>/payment/new</code></summary>
+<details><summary>New payment &raquo; <b><i>POST</i></b> <code>/payment/new</code></summary>
 
 #### Request
 Attribute | Description
@@ -50,7 +52,7 @@ Key | Description
 ```
 </details></details>
 
-<details><summary>Retrieve payment status » <b><i>GET</i></b> <code>/payment/:id</code></summary>
+<details><summary>Retrieve payment status &raquo; <b><i>GET</i></b> <code>/payment/:id</code></summary>
 
 #### Request
 *Request body should be empty.*
