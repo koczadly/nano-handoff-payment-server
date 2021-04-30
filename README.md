@@ -12,15 +12,16 @@
   - Add additional real-time checks for invalidated blocks (eg. fork block is confirmed) instead
     of only relying on timeout
 
+
+
 ## HTTP API
-### New payment
-***POST*** `/payment/new`
+<details><summary>New payment » <b><i>POST</i></b> <code>/payment/new</code></summary>
 
 #### Request
 Attribute | Description
 --- | ---
 `account` | The destination account for the payment
-`amount` | The amount of the payment, in decimal Nano (alternative to `amount_raw`)
+`amount` | The amount of the payment, in decimal Nano (alternative to `amountRaw`)
 `amountRaw` | The amount of the payment, in raw (alternative to `amount`)
 
 <details><summary>Example JSON</summary>
@@ -47,10 +48,12 @@ Key | Description
   "handoff": "eyJpZCI6ImVmM2NiOTI0LTRlYjEtNGMyYS04YjFjLWQ2YTRmZDRkNTZmNSIsImFkZHJlc3MiOiJuYW5vXzM4cmt4ZGM2ZHI0d2FwOWthbXN1N2s4Y3F5OGJqMW91Z3J4OGZpZnd1emV5ZHpjaDlkdGNtdDY2bXJjYyIsImFtb3VudCI6IjEyMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIm1ldGhvZHMiOlt7InR5cGUiOiJodHRwcyIsInVybCI6ImxvY2FsaG9zdDo4MDgwL2hhbmRvZmYifV19"
 }
 ```
-</details>
+</details></details>
 
-### Retrieve status
-***GET*** `/payment/:id`
+<details><summary>Retrieve payment status » <b><i>GET</i></b> <code>/payment/:id</code></summary>
+
+#### Request
+*Request body should be empty.*
 
 #### Response
 Key | Description
@@ -65,7 +68,7 @@ Key | Description
 `reqAmount` | The requested amount of the payment, in Nano
 `reqAmountRaw` | The requested amount of the payment, in raw
 
-<details><summary>Example response JSON</summary>
+<details><summary>Example JSON</summary>
 
 ```json
 {
@@ -80,4 +83,4 @@ Key | Description
   "reqAmountRaw": "120000000000000000000000000000"
 }
 ```
-</details>
+</details></details>
