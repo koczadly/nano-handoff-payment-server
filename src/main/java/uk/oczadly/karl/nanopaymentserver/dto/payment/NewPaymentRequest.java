@@ -36,7 +36,6 @@ public class NewPaymentRequest {
         return amountRaw;
     }
     
-    @JsonProperty("amount_raw")
     public void setAmountRaw(String amountRaw) {
         this.amountRaw = amountRaw;
     }

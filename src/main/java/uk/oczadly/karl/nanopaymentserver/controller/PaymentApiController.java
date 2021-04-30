@@ -9,7 +9,7 @@ import uk.oczadly.karl.nanopaymentserver.dto.payment.PaymentStatusResponse;
 import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
 
 @RestController()
-@RequestMapping("/api/payment")
+@RequestMapping("/payment")
 public class PaymentApiController {
     
     @Autowired private PaymentService paymentService;
@@ -17,7 +17,7 @@ public class PaymentApiController {
     
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/new")
-    public NewPaymentResponse pNew(@RequestBody NewPaymentRequest request) throws Exception {
+    public NewPaymentResponse pNew(@RequestBody NewPaymentRequest request) {
         return paymentService.createNewPayment(request);
     }
     
