@@ -3,10 +3,13 @@ package uk.oczadly.karl.nanopaymentserver.dto.handoff;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import uk.oczadly.karl.jnano.model.NanoAccount;
+import uk.oczadly.karl.jnano.model.NanoAmount;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HandoffSpecification {
@@ -17,6 +20,10 @@ public class HandoffSpecification {
     
     
     public HandoffSpecification() {}
+    
+    public HandoffSpecification(UUID id, NanoAccount address, NanoAmount amount, List<HandoffMethod> methods) {
+        this(id.toString(), address.toAddress(), amount.toRawString(), methods);
+    }
     
     public HandoffSpecification(String id, String address, String amount, List<HandoffMethod> methods) {
         this.id = id;

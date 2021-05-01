@@ -78,8 +78,10 @@ public class PaymentService {
         
         // Create and return handoff specification
         HandoffSpecification handoffReq = new HandoffSpecification(
-                payment.getId().toString(), destination.toAddress(), amount.toRawString(),
-                List.of(new HttpsHandoffMethod(handoffProperties.getUrl())));
+                payment.getId(), destination, amount,
+                List.of(
+                        new HttpsHandoffMethod(handoffProperties.getUrl())
+                ));
         handoffReq.setWork(handoffProperties.getWorkGen());
         try {
             return new NewPaymentResponse(handoffReq.getId(), handoffReq.toBase64());
