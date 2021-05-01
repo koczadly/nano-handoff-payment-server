@@ -15,9 +15,17 @@
     of only relying on timeout
 
 
+## Running & deployment
+- It is recommended that you run a proxy in front of this application to restrict access to API endpoints (`/payment/`)
+- Block handoff URL `/handoff` must be made accessible from remote connections
+- File `application.properties` must be configured before running the server
+
 
 ## HTTP API
-<details><summary>New payment &raquo; <b><i>POST</i></b> <code>/payment/new</code></summary>
+The following REST-like endpoints are made available by the application: 
+
+### Create new payment
+<details><summary><b><i>POST</i></b> <code>/payment/new</code></summary>
 
 #### Request
 Attribute | Description
@@ -52,9 +60,12 @@ Key | Description
 ```
 </details></details>
 
-<details><summary>Retrieve payment status &raquo; <b><i>GET</i></b> <code>/payment/:id</code></summary>
+### Retrieve payment status
+<details><summary><b><i>GET</i></b> <code>/payment/:id</code></summary>
 
 #### Request
+`id` property in URL should be the payment ID string returned by the new payment request.
+
 *Request body should be empty.*
 
 #### Response
