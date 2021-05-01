@@ -17,8 +17,18 @@
 
 ## Running & deployment
 - It is recommended that you run a proxy in front of this application to restrict access to API endpoints (`/payment/`)
-- Block handoff URL `/handoff` must be made accessible from remote connections
-- File `application.properties` must be configured before running the server
+- URL path `/handoff` *must* be made accessible from remote connections
+- File `application.properties` *must* be configured before running the server
+
+
+## Technical details
+- Based on the specification outlined in revision 1.9 of the block handoff proposal
+- Written using Java 11
+- Built using Spring frameworks (*Boot*, *Web* & *Data JPA*)
+- Uses file-based H2 database (`/data.mv.db`) to store payment data
+- Using [jNano](https://github.com/koczadly/jNano) Java library for Nano-related functions
+- Uses a combination of WebSockets and RPC polling to track block confirmation
+- Only compatible with block and hash handoff schemes (traditional payment models aren't supported)
 
 
 ## HTTP API
@@ -30,9 +40,9 @@ The following REST-like endpoints are made available by the application:
 #### Request
 Attribute | Description
 --- | ---
-`account` | The destination account for the payment
-`amount` | The amount of the payment, in decimal Nano (alternative to `amountRaw`)
-`amountRaw` | The amount of the payment, in raw (alternative to `amount`)
+`account` | The destination account address for the payment (receiver of funds)
+`amount` | The amount of the payment, in decimal *Nano* (alternative to `amountRaw`)
+`amountRaw` | The amount of the payment, in *raw* (alternative to `amount`)
 
 <details><summary>Example JSON</summary>
 
@@ -77,9 +87,10 @@ Key | Description
 `active` | `true` if payment is ongoing (not finalized)
 `successful` | `true` if payment was successful and has been confirmed
 `failed` | `true` if payment has failed and is inactive
+`handoffBlockHash` | The hash of the block handed off by the user (not present if no block has been provided)
 `reqAccount` | The requested destination account of the payment
-`reqAmount` | The requested amount of the payment, in Nano
-`reqAmountRaw` | The requested amount of the payment, in raw
+`reqAmount` | The requested amount of the payment, in *Nano*
+`reqAmountRaw` | The requested amount of the payment, in *raw*
 
 <details><summary>Example JSON</summary>
 

@@ -12,7 +12,7 @@
 	<artifactId>nano-payment-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>nano-payment-server</name>
-	<description>Reference implementation for processing Nano payments</description>
+	<description>Reference implementation payment processor for Nano block handoffs</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
