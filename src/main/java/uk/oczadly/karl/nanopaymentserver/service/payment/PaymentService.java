@@ -207,9 +207,6 @@ public class PaymentService {
             }
             // Remove redundant parameters
             payment.setExpiration(null);
-            if (payment.getStatus() != Payment.Status.COMPLETED) {
-                payment.setHandoffHash(null); // Allow hash to be used by another payment
-            }
         }
         synchronized (repoMutex) {
             return paymentRepo.save(payment);
