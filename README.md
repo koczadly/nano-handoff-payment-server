@@ -13,6 +13,7 @@
     - Add *cancel* endpoint which cancels an ongoing payment
   - Add additional real-time checks for invalidated blocks (eg. fork block is confirmed) instead
     of only relying on timeout
+  - Include Postman collection for testing REST API
 
 
 ## Running & deployment
