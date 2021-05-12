@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 
 /**
- * The response to be sent back to the wallet after it hands off a block.
+ * The response to be sent back to the wallet after a block is handed off.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HandoffResponse {

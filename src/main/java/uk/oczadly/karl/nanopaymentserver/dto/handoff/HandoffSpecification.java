@@ -7,29 +7,26 @@ import uk.oczadly.karl.jnano.model.NanoAccount;
 import uk.oczadly.karl.jnano.model.NanoAmount;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HandoffSpecification {
 
     private String id, address, amount;
-    private List<HandoffMethod> methods;
+    private Map<String, HandoffMethod> methods = new HashMap<>();
     private boolean exact = true, work = true, reuse = false;
     
     
     public HandoffSpecification() {}
     
-    public HandoffSpecification(UUID id, NanoAccount address, NanoAmount amount, List<HandoffMethod> methods) {
-        this(id.toString(), address.toAddress(), amount.toRawString(), methods);
+    public HandoffSpecification(UUID id, NanoAccount address, NanoAmount amount) {
+        this(id.toString(), address.toAddress(), amount.toRawString());
     }
     
-    public HandoffSpecification(String id, String address, String amount, List<HandoffMethod> methods) {
+    public HandoffSpecification(String id, String address, String amount) {
         this.id = id;
         this.address = address;
         this.amount = amount;
-        this.methods = methods;
     }
     
     
@@ -57,12 +54,12 @@ public class HandoffSpecification {
         this.amount = amount;
     }
     
-    public List<HandoffMethod> getMethods() {
+    public Map<String, HandoffMethod> getMethods() {
         return methods;
     }
     
-    public void setMethods(List<HandoffMethod> methods) {
-        this.methods = methods;
+    public void addMethod(HandoffMethod method) {
+        this.methods.put(method.getType().toLowerCase(), method);
     }
     
     public Boolean getExact() {

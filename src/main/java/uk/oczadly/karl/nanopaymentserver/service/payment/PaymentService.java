@@ -77,14 +77,11 @@ public class PaymentService {
         Payment payment = save(new Payment(destination, amount, paymentProperties.getTimeout()));
         
         // Create and return handoff specification
-        HandoffSpecification handoffReq = new HandoffSpecification(
-                payment.getId(), destination, amount,
-                List.of(
-                        new HttpsHandoffMethod(handoffProperties.getUrl())
-                ));
-        handoffReq.setWork(handoffProperties.getWorkGen());
+        HandoffSpecification handoffSpec = new HandoffSpecification(payment.getId(), destination, amount);
+        handoffSpec.addMethod(new HttpsHandoffMethod(handoffProperties.getUrl()));
+        handoffSpec.setWork(handoffProperties.getWorkGen());
         try {
-            return new NewPaymentResponse(handoffReq.getId(), handoffReq.toBase64());
+            return new NewPaymentResponse(handoffSpec.getId(), handoffSpec.toBase64());
         } catch (JsonProcessingException e) {
             throw new AssertionError(); // Serialization to JSON shouldn't throw an exception
         }

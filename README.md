@@ -10,20 +10,20 @@
   - Add unit/integration tests where appropriate
   - REST API
     - Add *wait* endpoint which blocks until payment is finalized
-    - Add *cancel* endpoint which cancels an ongoing payment
+    - Add *cancel* endpoint which cancels an active payment
   - Add additional real-time checks for invalidated blocks (eg. fork block is confirmed) instead
     of only relying on timeout
   - Include Postman collection for testing REST API
 
 
 ## Running & deployment
-- It is recommended that you run a proxy in front of this application to restrict access to API endpoints (`/payment/`)
+- It is recommended that you run a reverse proxy in front of this server to restrict access to API endpoints (`/payment/`)
 - URL path `/handoff` *must* be made accessible from remote connections
 - File `application.properties` *must* be configured before running the server
 
 
 ## Technical details
-- Based on the specification outlined in revision 1.9 of the block handoff proposal
+- Based on the specification outlined in revision 1.10 of the block handoff proposal
 - Written using Java 11
 - Built using Spring frameworks (*Boot*, *Web* & *Data JPA*)
 - Uses file-based H2 database (`/data.mv.db`) to store payment data
