@@ -6,11 +6,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import uk.oczadly.karl.jnano.model.HexData;
+import uk.oczadly.karl.jnano.model.NanoAccount;
 import uk.oczadly.karl.jnano.model.NanoAmount;
 import uk.oczadly.karl.jnano.model.block.Block;
 import uk.oczadly.karl.jnano.model.block.BlockDeserializer;
 import uk.oczadly.karl.jnano.model.block.StateBlock;
-import uk.oczadly.karl.jnano.model.block.StateBlockSubType;
 import uk.oczadly.karl.jnano.rpc.response.ResponseAccountInfo;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequestParameters;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
@@ -20,6 +20,7 @@ import uk.oczadly.karl.nanopaymentserver.exception.RpcQueryException;
 import uk.oczadly.karl.nanopaymentserver.properties.HandoffProperties;
 import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockWatcherService;
 import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
+import uk.oczadly.karl.nanopaymentserver.util.BlockUtil;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -87,47 +88,61 @@ public class BlockHandoffService {
             throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid block.");
         }
         
-        // Block must be send subtype
-        if (block.getSubType() != StateBlockSubType.SEND)
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Incorrect block subtype.");
+        validateBlockContents(payment, block);
+        registerHandoff(payment.getId(), block.getHash());
+        processBlock(payment.getId(), block);
+    }
+    
+    /** Performs preliminary block property and state validation, throwing a HandoffException if invalid. */
+    private void validateBlockContents(Payment payment, Block block) {
+        // Retrieve block specifics
+        Optional<NanoAccount> account = BlockUtil.getAccount(block);
+        Optional<NanoAccount> destination = BlockUtil.getSendDestination(block);
+        Optional<HexData> previous = BlockUtil.getPrevious(block);
+        Optional<NanoAmount> balance = BlockUtil.getBalance(block);
+        
+        // Check block parameters
+        if (destination.isEmpty() || account.isEmpty() || previous.isEmpty() || balance.isEmpty())
+            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Incorrect or unsupported block type.");
+        
         // Check block signature
-        if (!block.verifySignature())
+        if (!BlockUtil.tryVerifySignature(block))
             throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid block signature.");
         // Ensure block is sending to correct account
-        if (!payment.getDepositAccount().equalsIgnorePrefix(block.getLink().asAccount()))
+        if (!destination.get().equalsIgnorePrefix(payment.getDepositAccount()))
             throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Incorrect destination.");
-        Optional<ResponseAccountInfo> accountInfo = rpcService.getAccountInfo(block.getAccount());
+        Optional<ResponseAccountInfo> accountInfo = rpcService.getAccountInfo(account.get());
         // Check that the account which created the block exists
         if (accountInfo.isEmpty())
             throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid block.");
         // Ensure block doesn't already exist (as frontier, at least - if it exists behind the frontier, then it will
         // be caught by the previous field check performed after).
-        if (accountInfo.get().getFrontierBlockHash().equalsValue(block.getHash()))
+        if (block.getHash().equalsValue(accountInfo.get().getFrontierBlockHash()))
             throw new HandoffException(HandoffResponse.Status.ERR_BLOCK_ALREADY_PUBLISHED);
         // Check previous == frontier
-        if (!accountInfo.get().getFrontierBlockHash().equalsValue(block.getPreviousBlockHash()))
+        if (!previous.get().equalsValue(accountInfo.get().getFrontierBlockHash()))
             throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect previous.");
         // Check that balance has decreased (block balance < account balance)
-        if (block.getBalance().compareTo(accountInfo.get().getBalance()) >= 0)
+        if (balance.get().compareTo(accountInfo.get().getBalance()) >= 0)
             throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect balance.");
         // Ensure sending amount matches the payment amount
-        NanoAmount amount = accountInfo.get().getBalance().subtract(block.getBalance());
+        NanoAmount amount = accountInfo.get().getBalance().subtract(balance.get());
         if (!amount.equals(payment.getAmount()))
             throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_AMOUNT);
         // Ensure that work difficulty is sufficient
         if (!rpcService.isWorkValidForSend(block)) {
             if (handoffProperties.getWorkGen()) {
-                block.setWorkSolution(null); // Work will be (re)computed later
+                // Work will be computed during processing
+                block.setWorkSolution(null);
             } else if (block.getWorkSolution() != null) {
+                // Difficulty of provided work too low
                 throw new HandoffException(HandoffResponse.Status.ERR_INSUFFICIENT_WORK);
             } else {
+                // No work provided
                 throw new HandoffException(HandoffResponse.Status.ERR_INSUFFICIENT_WORK,
                         "Service doesn't support work generation.");
             }
         }
-        
-        registerHandoff(payment.getId(), block.getHash());
-        processBlock(payment.getId(), block);
     }
     
     /**

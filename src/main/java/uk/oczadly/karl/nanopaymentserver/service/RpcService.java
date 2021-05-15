@@ -105,12 +105,13 @@ public class RpcService {
      * @param block the block to check work
      * @return true if the work is valid
      */
-    public boolean isWorkValidForSend(IBlockPrevious block) {
-        if (block.getWorkSolution() == null)
+    public boolean isWorkValidForSend(Block block) {
+        if (block.getWorkSolution() == null) {
             return false; // Work value is empty
+        }
         try {
-            return rpc.processRequest(new RequestWorkValidate(
-                    block.getWorkSolution().getAsHexadecimal(), block.getPreviousBlockHash().toHexString()))
+            String root = WorkSolution.getRoot(block).toHexString();
+            return rpc.processRequest(new RequestWorkValidate(block.getWorkSolution().getAsHexadecimal(), root))
                     .isValidAll();
         } catch (IOException | RpcException e) {
             throw wrapException(e);

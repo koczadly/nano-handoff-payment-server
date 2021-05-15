@@ -11,7 +11,7 @@ import uk.oczadly.karl.jnano.model.NanoAccount;
 import uk.oczadly.karl.jnano.model.NanoAmount;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffSpecification;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HttpsHandoffMethod;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HttpsHandoffChannel;
 import uk.oczadly.karl.nanopaymentserver.dto.payment.NewPaymentRequest;
 import uk.oczadly.karl.nanopaymentserver.dto.payment.NewPaymentResponse;
 import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
@@ -78,7 +78,7 @@ public class PaymentService {
         
         // Create and return handoff specification
         HandoffSpecification handoffSpec = new HandoffSpecification(payment.getId(), destination, amount);
-        handoffSpec.addMethod(new HttpsHandoffMethod(handoffProperties.getUrl()));
+        handoffSpec.addChannel(new HttpsHandoffChannel(handoffProperties.getUrl()));
         handoffSpec.setWork(handoffProperties.getWorkGen());
         try {
             return new NewPaymentResponse(handoffSpec.getId(), handoffSpec.toBase64());
