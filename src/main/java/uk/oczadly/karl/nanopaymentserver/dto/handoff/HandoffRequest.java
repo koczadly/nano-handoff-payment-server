@@ -4,13 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * @author Karl Oczadly
+ * The handoff request, containing the payment ID and block/hash
  */
-public class HandoffRequestParameters {
+public class HandoffRequest {
 
     private String id, hash;
-    @JsonProperty("block")
-    private ObjectNode blockContents;
+    @JsonProperty("block") private ObjectNode blockContents;
     
     
     public String getId() {

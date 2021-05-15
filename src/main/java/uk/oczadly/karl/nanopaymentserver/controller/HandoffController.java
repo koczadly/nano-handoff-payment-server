@@ -5,14 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
 import uk.oczadly.karl.nanopaymentserver.exception.HandoffException;
 import uk.oczadly.karl.nanopaymentserver.exception.PaymentNotFoundException;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequestParameters;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequest;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
 import uk.oczadly.karl.nanopaymentserver.service.BlockHandoffService;
-
-import java.util.Objects;
 
 @RestController
 public class HandoffController {
@@ -29,7 +26,7 @@ public class HandoffController {
     
     @PostMapping(path = "/handoff", consumes = "application/json")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public HandoffResponse pHandoff(@RequestBody HandoffRequestParameters params) {
+    public HandoffResponse pHandoff(@RequestBody HandoffRequest params) {
         return handoffService.handoff(params); // Only returns if successful; failure will throw an exception
     }
     

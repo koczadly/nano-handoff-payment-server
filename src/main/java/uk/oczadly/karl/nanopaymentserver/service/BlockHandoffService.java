@@ -12,7 +12,7 @@ import uk.oczadly.karl.jnano.model.block.Block;
 import uk.oczadly.karl.jnano.model.block.BlockDeserializer;
 import uk.oczadly.karl.jnano.model.block.StateBlock;
 import uk.oczadly.karl.jnano.rpc.response.ResponseAccountInfo;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequestParameters;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequest;
 import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
 import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
 import uk.oczadly.karl.nanopaymentserver.exception.HandoffException;
@@ -43,7 +43,7 @@ public class BlockHandoffService {
     /**
      * Processes and accepts the offered handoff data (hash/block).
      */
-    public HandoffResponse handoff(HandoffRequestParameters handoff) {
+    public HandoffResponse handoff(HandoffRequest handoff) {
         if (handoff.getId() == null) {
             throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "No ID provided.");
         }
