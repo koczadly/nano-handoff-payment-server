@@ -20,8 +20,8 @@ public class HandoffSpecification {
     
     public HandoffSpecification() {}
     
-    public HandoffSpecification(UUID id, NanoAccount address, NanoAmount amount) {
-        this(id.toString(), address.toAddress(), amount.toRawString());
+    public HandoffSpecification(UUID id, NanoAccount address, NanoAmount amount, HandoffChannel...channels) {
+        this(id.toString(), address.toAddress(), amount.toRawString(), channels);
     }
     
     public HandoffSpecification(String id, String address, String amount, HandoffChannel...channels) {

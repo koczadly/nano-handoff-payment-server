@@ -77,8 +77,9 @@ public class PaymentService {
         Payment payment = save(new Payment(destination, amount, paymentProperties.getTimeout()));
         
         // Create and return handoff specification
-        HandoffSpecification handoffSpec = new HandoffSpecification(payment.getId(), destination, amount);
-        handoffSpec.addChannel(new HttpsHandoffChannel(handoffProperties.getUrl()));
+        HandoffSpecification handoffSpec = new HandoffSpecification(
+                payment.getId(), destination, amount,
+                new HttpsHandoffChannel(handoffProperties.getUrl()));
         handoffSpec.setWork(handoffProperties.getWorkGen());
         try {
             return new NewPaymentResponse(handoffSpec.getId(), handoffSpec.toBase64());
