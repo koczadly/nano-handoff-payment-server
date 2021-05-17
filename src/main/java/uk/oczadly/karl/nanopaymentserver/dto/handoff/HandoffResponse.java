@@ -1,6 +1,7 @@
 package uk.oczadly.karl.nanopaymentserver.dto.handoff;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -16,7 +17,7 @@ import java.io.IOException;
 public class HandoffResponse {
 
     private Status status;
-    private String message, label;
+    private String message, reference;
     private ObjectNode data;
     
     public HandoffResponse(Status status) {
@@ -28,10 +29,10 @@ public class HandoffResponse {
         this.message = message;
     }
     
-    public HandoffResponse(Status status, String message, String label) {
+    public HandoffResponse(Status status, String message, String reference) {
         this.status = status;
         this.message = message;
-        this.label = label;
+        this.reference = reference;
     }
     
     
@@ -43,6 +44,7 @@ public class HandoffResponse {
         this.status = status;
     }
     
+    @JsonProperty("msg")
     public String getMessage() {
         return message;
     }
@@ -51,12 +53,13 @@ public class HandoffResponse {
         this.message = message;
     }
     
-    public String getLabel() {
-        return label;
+    @JsonProperty("ref")
+    public String getReference() {
+        return reference;
     }
     
-    public void setLabel(String label) {
-        this.label = label;
+    public void setReference(String reference) {
+        this.reference = reference;
     }
     
     public ObjectNode getData() {
