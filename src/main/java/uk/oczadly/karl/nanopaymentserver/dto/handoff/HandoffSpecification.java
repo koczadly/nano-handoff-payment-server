@@ -15,7 +15,7 @@ public class HandoffSpecification {
 
     private String id, address, amount;
     private final Map<String, HandoffChannel> channels = new HashMap<>();
-    private boolean exact = true, work = true, reuse = false;
+    private boolean variableAmount = false, workRequired = false, reuse = false;
     
     
     public HandoffSpecification() {}
@@ -41,7 +41,7 @@ public class HandoffSpecification {
         this.id = id;
     }
     
-    @JsonProperty("ad")
+    @JsonProperty("d")
     public String getAddress() {
         return address;
     }
@@ -50,7 +50,7 @@ public class HandoffSpecification {
         this.address = address;
     }
     
-    @JsonProperty("am")
+    @JsonProperty("a")
     public String getAmount() {
         return amount;
     }
@@ -59,7 +59,7 @@ public class HandoffSpecification {
         this.amount = amount;
     }
     
-    @JsonProperty("ch")
+    @JsonProperty("c")
     public Map<String, HandoffChannel> getChannels() {
         return channels;
     }
@@ -68,27 +68,27 @@ public class HandoffSpecification {
         this.channels.put(method.getType().toLowerCase(), method);
     }
     
-    @JsonProperty("ex")
-    public Boolean getExact() {
-        return exact ? null : false; // To shorten URI, we can exclude default value
+    @JsonProperty("va")
+    public Boolean getVariableAmount() {
+        return variableAmount ? true : null; // Exclude default value to shorten URI
     }
     
-    public void setExact(boolean exact) {
-        this.exact = exact;
+    public void setVariableAmount(boolean variableAmount) {
+        this.variableAmount = variableAmount;
     }
     
     @JsonProperty("wk")
-    public Boolean getWork() {
-        return work ? null : false; // To shorten URI, we can exclude default value
+    public Boolean getWorkRequired() {
+        return workRequired ? true : null; // Exclude default value to shorten URI
     }
     
-    public void setWork(boolean work) {
-        this.work = work;
+    public void setWorkRequired(boolean workRequired) {
+        this.workRequired = workRequired;
     }
     
     @JsonProperty("re")
     public Boolean getReuse() {
-        return reuse ? true : null; // To shorten URI, we can exclude default value
+        return reuse ? true : null; // Exclude default value to shorten URI
     }
     
     public void setReuse(boolean reuse) {

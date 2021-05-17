@@ -80,7 +80,7 @@ public class PaymentService {
         HandoffSpecification handoffSpec = new HandoffSpecification(
                 payment.getId(), destination, amount,
                 new HttpsHandoffChannel(handoffProperties.getUrl()));
-        handoffSpec.setWork(handoffProperties.getWorkGen());
+        handoffSpec.setWorkRequired(!handoffProperties.getWorkGen());
         try {
             return new NewPaymentResponse(handoffSpec.getId(), handoffSpec.toBase64());
         } catch (JsonProcessingException e) {
