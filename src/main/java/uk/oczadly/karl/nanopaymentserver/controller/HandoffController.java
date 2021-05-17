@@ -48,7 +48,7 @@ public class HandoffController {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public HandoffResponse handleInternalException(Exception e) {
         log.error("Internal error when processing handoff", e);
-        return new HandoffResponse(HandoffResponse.Status.ERR_SEVICE_FAILURE, "Internal server error!");
+        return new HandoffResponse(HandoffResponse.Status.ERR_SERVICE_FAILURE, "Internal server error!");
     }
 
 }

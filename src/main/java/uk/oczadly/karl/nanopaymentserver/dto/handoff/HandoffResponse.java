@@ -72,8 +72,8 @@ public class HandoffResponse {
     public enum Status {
         ACCEPTED                     (0),
         ERR_INVALID                  (-1),
-        ERR_REJECTED                 (-2),
-        ERR_SEVICE_FAILURE           (-3),
+        ERR_EXPIRED                  (-2),
+        ERR_SERVICE_FAILURE          (-3),
         ERR_INSUFFICIENT_WORK        (-4),
         ERR_INCORRECT_BLOCK_STATE    (-5),
         ERR_INCORRECT_BLOCK_AMOUNT   (-6),

@@ -126,7 +126,7 @@ public class PaymentService {
             Payment paymentReq = getPayment(id);
             if (paymentReq.getStatus() == Payment.Status.EXPIRED) {
                 // Payment expired
-                throw new HandoffException(HandoffResponse.Status.ERR_REJECTED, "Payment has expired.");
+                throw new HandoffException(HandoffResponse.Status.ERR_EXPIRED, "Payment has expired.");
             }
             if (paymentReq.getStatus() != Payment.Status.AWAITING_HANDOFF) {
                 // Payment isn't in handoff state, reject payment

@@ -49,7 +49,7 @@ public class BlockHandoffService {
         // Check if payment is in correct state (waiting for handoff). This is just a preliminary check, and will be
         // verified again when updating the payment state.
         if (payment.getStatus() == Payment.Status.EXPIRED) {
-            throw new HandoffException(HandoffResponse.Status.ERR_REJECTED, "Payment has expired.");
+            throw new HandoffException(HandoffResponse.Status.ERR_EXPIRED, "Payment has expired.");
         } else if (payment.getStatus() != Payment.Status.AWAITING_HANDOFF) {
             throw new HandoffException(HandoffResponse.Status.ERR_ALREADY_PROVIDED);
         }
