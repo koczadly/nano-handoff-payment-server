@@ -1,25 +1,16 @@
 package uk.oczadly.karl.nanopaymentserver.util;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.oczadly.karl.jnano.model.HexData;
 import uk.oczadly.karl.jnano.model.NanoAccount;
 import uk.oczadly.karl.jnano.model.NanoAmount;
 import uk.oczadly.karl.jnano.model.block.*;
-import uk.oczadly.karl.jnano.model.block.interfaces.IBlockAccount;
-import uk.oczadly.karl.jnano.model.block.interfaces.IBlockBalance;
 import uk.oczadly.karl.jnano.model.block.interfaces.IBlockLink;
-import uk.oczadly.karl.jnano.model.block.interfaces.IBlockPrevious;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
-import uk.oczadly.karl.nanopaymentserver.exception.HandoffException;
 
 import java.util.Optional;
 
 /**
- * Helper methods for blocks.
+ * Additional helper methods for Nano.
  */
-public class BlockUtil {
+public class NanoUtil {
     
     /**
      * @return the destination if sending funds, or empty if not a send block
@@ -36,5 +27,13 @@ public class BlockUtil {
         return Optional.empty();
     }
     
+    
+    public static String amountToString(NanoAmount amount, boolean useDecimal) {
+        return useDecimal ? amount.getAsNano().toPlainString() : amount.toRawString();
+    }
+    
+    public static NanoAmount amountFromString(String str, boolean useDecimal) {
+        return useDecimal ? NanoAmount.valueOfNano(str) : NanoAmount.valueOfRaw(str);
+    }
     
 }

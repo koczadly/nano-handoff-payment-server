@@ -9,15 +9,17 @@ import java.net.URL;
 import java.util.Objects;
 
 @Component
-@ConfigurationProperties("paymentserver.node")
-public class NodeProperties {
+@ConfigurationProperties("payment-server.node")
+public class NanoNodeProperties {
     
     private URL rpcUrl = Util.parseUrl("http://[::1]:7076");
-    private URL workgenRpcUrl;
+    private URL workRpcUrl;
     private URI websocketUri = URI.create("ws://[::1]:7078");
-    private String addressPrefix = "nano";
-    
-    
+
+
+    /**
+     * @return the URL of the node's RPC endpoint
+     */
     public URL getRpcUrl() {
         return rpcUrl;
     }
@@ -25,15 +27,21 @@ public class NodeProperties {
     public void setRpcUrl(String rpcUrl) {
         this.rpcUrl = Util.parseUrl(rpcUrl);
     }
-    
-    public URL getWorkgenRpcUrl() {
-        return Objects.requireNonNullElse(workgenRpcUrl, rpcUrl);
+
+    /**
+     * @return the URL of the work generating node's RPC endpoint, or the same as rpc-url if not set
+     */
+    public URL getWorkRpcUrl() {
+        return Objects.requireNonNullElse(workRpcUrl, rpcUrl);
     }
     
-    public void setWorkgenRpcUrl(String workgenRpcUrl) {
-        this.workgenRpcUrl = workgenRpcUrl != null ? Util.parseUrl(workgenRpcUrl) : null;
+    public void setWorkRpcUrl(String workRpcUrl) {
+        this.workRpcUrl = workRpcUrl != null ? Util.parseUrl(workRpcUrl) : null;
     }
-    
+
+    /**
+     * @return the URL of the node's websocket notifications server
+     */
     public URI getWebsocketUri() {
         return websocketUri;
     }
@@ -42,11 +50,4 @@ public class NodeProperties {
         this.websocketUri = URI.create(websocketUri);
     }
     
-    public String getAddressPrefix() {
-        return addressPrefix;
-    }
-    
-    public void setAddressPrefix(String addressPrefix) {
-        this.addressPrefix = addressPrefix;
-    }
 }

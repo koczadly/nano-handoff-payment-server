@@ -14,22 +14,22 @@ import java.io.IOException;
  * The response to be sent back to the wallet after a block is handed off.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class HandoffResponse {
+public class HandoffDispatchResponse {
 
     private Status status;
     private String message, reference;
     private ObjectNode data;
     
-    public HandoffResponse(Status status) {
+    public HandoffDispatchResponse(Status status) {
         this.status = status;
     }
     
-    public HandoffResponse(Status status, String message) {
+    public HandoffDispatchResponse(Status status, String message) {
         this.status = status;
         this.message = message;
     }
     
-    public HandoffResponse(Status status, String message, String reference) {
+    public HandoffDispatchResponse(Status status, String message, String reference) {
         this.status = status;
         this.message = message;
         this.reference = reference;
@@ -79,7 +79,7 @@ public class HandoffResponse {
         ERR_SERVICE_FAILURE          (-3),
         ERR_INSUFFICIENT_WORK        (-4),
         ERR_INCORRECT_BLOCK_STATE    (-5),
-        ERR_INCORRECT_BLOCK_AMOUNT   (-6),
+        ERR_INCORRECT_AMOUNT         (-6),
         ERR_BLOCK_ALREADY_ASSOCIATED (-7),
         ERR_ALREADY_PROVIDED         (-8),
         ERR_BLOCK_ALREADY_PUBLISHED  (-9);

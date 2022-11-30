@@ -10,7 +10,7 @@ import java.math.BigInteger;
  * Reads/stores amounts as RAW strings in the database.
  */
 @Converter
-public class NanoAmountConverter implements AttributeConverter<NanoAmount, byte[]> {
+public class AmountConverter implements AttributeConverter<NanoAmount, byte[]> {
     
     @Override
     public byte[] convertToDatabaseColumn(NanoAmount amount) {

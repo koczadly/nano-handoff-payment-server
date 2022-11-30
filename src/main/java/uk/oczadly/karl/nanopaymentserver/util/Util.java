@@ -1,5 +1,7 @@
 package uk.oczadly.karl.nanopaymentserver.util;
 
+import uk.oczadly.karl.jnano.model.NanoAmount;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 

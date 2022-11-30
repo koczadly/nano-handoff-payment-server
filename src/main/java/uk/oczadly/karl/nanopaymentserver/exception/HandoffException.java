@@ -1,29 +1,29 @@
 package uk.oczadly.karl.nanopaymentserver.exception;
 
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffDispatchResponse;
 
 /**
  * @author Karl Oczadly
  */
 public class HandoffException extends RuntimeException {
     
-    private final HandoffResponse response;
+    private final HandoffDispatchResponse response;
     
-    public HandoffException(HandoffResponse response) {
+    public HandoffException(HandoffDispatchResponse response) {
         super(response.getStatus() + (response.getMessage() != null ? (": " + response.getMessage()) : ""));
         this.response = response;
     }
     
-    public HandoffException(HandoffResponse.Status status) {
-        this(new HandoffResponse(status));
+    public HandoffException(HandoffDispatchResponse.Status status) {
+        this(new HandoffDispatchResponse(status));
     }
     
-    public HandoffException(HandoffResponse.Status status, String message) {
-        this(new HandoffResponse(status, message));
+    public HandoffException(HandoffDispatchResponse.Status status, String message) {
+        this(new HandoffDispatchResponse(status, message));
     }
     
     
-    public HandoffResponse getResponseObject() {
+    public HandoffDispatchResponse getResponse() {
         return response;
     }
     

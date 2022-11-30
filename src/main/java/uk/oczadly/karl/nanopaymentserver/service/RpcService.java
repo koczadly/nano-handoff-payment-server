@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import uk.oczadly.karl.jnano.model.HexData;
 import uk.oczadly.karl.jnano.model.NanoAccount;
 import uk.oczadly.karl.jnano.model.block.Block;
-import uk.oczadly.karl.jnano.model.block.interfaces.IBlockPrevious;
 import uk.oczadly.karl.jnano.model.work.WorkSolution;
 import uk.oczadly.karl.jnano.rpc.RpcQueryNode;
 import uk.oczadly.karl.jnano.rpc.exception.RpcEntityNotFoundException;
@@ -15,19 +14,19 @@ import uk.oczadly.karl.jnano.rpc.exception.RpcException;
 import uk.oczadly.karl.jnano.rpc.exception.RpcExternalException;
 import uk.oczadly.karl.jnano.rpc.request.node.*;
 import uk.oczadly.karl.jnano.rpc.response.ResponseAccountInfo;
-import uk.oczadly.karl.jnano.rpc.response.ResponseBlockHashes;
 import uk.oczadly.karl.jnano.rpc.response.ResponseBlockInfo;
 import uk.oczadly.karl.jnano.rpc.response.ResponseWork;
 import uk.oczadly.karl.jnano.websocket.NanoWebSocketClient;
 import uk.oczadly.karl.nanopaymentserver.exception.RpcQueryException;
-import uk.oczadly.karl.nanopaymentserver.properties.NodeProperties;
+import uk.oczadly.karl.nanopaymentserver.properties.NanoNodeProperties;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+/**
+ * The RPC service facilitates communication with an external Nano node, configured by {@link NanoNodeProperties}.
+ */
 @Service
 public class RpcService {
     
@@ -35,15 +34,14 @@ public class RpcService {
     
     private final RpcQueryNode rpc, workRpc;
     private final URI wsUri;
-    private final ExecutorService blockPublishExecutor = Executors.newSingleThreadExecutor();
-    
+
     @Autowired
-    public RpcService(NodeProperties config) {
+    public RpcService(NanoNodeProperties config) {
         this.rpc = RpcQueryNode.builder()
                 .setDefaultTimeout(10000)
                 .setAddress(config.getRpcUrl())
                 .build();
-        this.workRpc = new RpcQueryNode(config.getWorkgenRpcUrl());
+        this.workRpc = new RpcQueryNode(config.getWorkRpcUrl());
         this.wsUri = config.getWebsocketUri();
     }
     
@@ -77,9 +75,9 @@ public class RpcService {
      * @param hash the hash of the block to retrieve
      * @return the block info, or empty if the block doesn't exist
      */
-    public Optional<ResponseBlockInfo> getBlockInfo(HexData hash) {
+    public Optional<ResponseBlockInfo> getBlockInfo(String hash) {
         try {
-            return Optional.of(rpc.processRequest(new RequestBlockInfo(hash.toHexString())));
+            return Optional.of(rpc.processRequest(new RequestBlockInfo(hash)));
         } catch (RpcEntityNotFoundException e) {
             return Optional.empty(); // Block doesn't exist
         } catch (IOException | RpcException e) {
@@ -94,7 +92,7 @@ public class RpcService {
     public void publishBlock(Block block) {
         try {
             rpc.processRequest(new RequestProcess(block));
-            log.info("Published block {} to network", block.getHash());
+            log.debug("Published block {} to the Nano network.", block.getHash());
         } catch (IOException | RpcException e) {
             throw wrapException(e);
         }
@@ -111,7 +109,8 @@ public class RpcService {
         }
         try {
             String root = WorkSolution.getRoot(block).toHexString();
-            return rpc.processRequest(new RequestWorkValidate(block.getWorkSolution().getAsHexadecimal(), root))
+            return rpc.processRequest(
+                    new RequestWorkValidate(block.getWorkSolution().getAsHexadecimal(), root))
                     .isValidAll();
         } catch (IOException | RpcException e) {
             throw wrapException(e);
@@ -123,10 +122,13 @@ public class RpcService {
      * @param block the block to generate work for
      */
     public void generateWork(Block block) {
-        log.info("Generating work for block {}...", block.getHash());
+        log.debug("Generating work for block {}...", block.getHash());
         try {
+            long startTime = System.nanoTime();
             ResponseWork work = workRpc.processRequest(new RequestWorkGenerate.Builder(block).build());
             block.setWorkSolution(work.getWorkSolution());
+            log.debug("Successfully generated work for block {}, took {}s to compute",
+                    block.getHash(), (System.nanoTime() - startTime) / 1e9);
         } catch (RpcExternalException e) {
             if (e.getMessage().equals("Provided work is already enough for given difficulty."))
                 return; // Work already sufficient
@@ -142,11 +144,11 @@ public class RpcService {
      */
     private RpcQueryException wrapException(Exception e) {
         if (e instanceof RpcException) {
-            throw new RpcQueryException("Unexpected RPC exception.", e);
+            throw new RpcQueryException(e);
         } else if (e instanceof IOException) {
-            throw new RpcQueryException("Node unreachable.", e);
+            throw new RpcQueryException("A communication error occurred with the remote node.", e);
         } else {
-            throw new RpcQueryException("Unknown error!", e);
+            throw new RpcQueryException("An unrecognized error occurred!", e);
         }
     }
 

@@ -1,7 +1,6 @@
 package uk.oczadly.karl.nanopaymentserver.entity.converters;
 
 import uk.oczadly.karl.jnano.model.HexData;
-import uk.oczadly.karl.jnano.model.NanoAmount;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;

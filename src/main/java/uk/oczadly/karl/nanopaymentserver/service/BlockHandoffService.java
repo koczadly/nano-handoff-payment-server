@@ -5,25 +5,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import uk.oczadly.karl.jnano.model.HexData;
-import uk.oczadly.karl.jnano.model.NanoAmount;
-import uk.oczadly.karl.jnano.model.block.Block;
 import uk.oczadly.karl.jnano.rpc.response.ResponseAccountInfo;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffRequest;
-import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffResponse;
-import uk.oczadly.karl.nanopaymentserver.entity.payment.Payment;
+import uk.oczadly.karl.nanopaymentserver.domain.SendBlock;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffDispatchRequest;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffDispatchResponse;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HandoffPaymentRequest;
+import uk.oczadly.karl.nanopaymentserver.dto.handoff.HttpsHandoffChannel;
+import uk.oczadly.karl.nanopaymentserver.entity.invoice.PaymentInvoice;
+import uk.oczadly.karl.nanopaymentserver.entity.transaction.PaymentTransaction;
 import uk.oczadly.karl.nanopaymentserver.exception.HandoffException;
-import uk.oczadly.karl.nanopaymentserver.exception.RpcQueryException;
+import uk.oczadly.karl.nanopaymentserver.exception.InvoiceNotFoundException;
 import uk.oczadly.karl.nanopaymentserver.properties.HandoffProperties;
-import uk.oczadly.karl.nanopaymentserver.service.blockwatcher.BlockWatcherService;
+import uk.oczadly.karl.nanopaymentserver.service.blockprocessor.BlockProcessingService;
 import uk.oczadly.karl.nanopaymentserver.service.payment.PaymentService;
-import uk.oczadly.karl.nanopaymentserver.util.SendBlockWrapper;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+/**
+ * The block handoff service provides methods for working with the handoff protocol, including the creation/encoding of
+ * handoff payment requests, and the acceptance of incoming blocks.
+ */
 @Service
 public class BlockHandoffService {
     
@@ -32,148 +34,117 @@ public class BlockHandoffService {
     @Autowired private HandoffProperties handoffProperties;
     @Autowired private RpcService rpcService;
     @Autowired private PaymentService paymentService;
-    @Autowired private BlockWatcherService blockWatcherService;
-    
-    private final ExecutorService blockPublishExecutor = Executors.newSingleThreadExecutor();
-    
-    
-    /**
-     * Processes and accepts the offered handoff data (hash/block).
-     */
-    public HandoffResponse handoff(HandoffRequest handoff) {
-        if (handoff.getId() == null) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "No ID provided.");
-        }
-        Payment payment = paymentService.getPayment(handoff.getId());
-        
-        // Check if payment is in correct state (waiting for handoff). This is just a preliminary check, and will be
-        // verified again when updating the payment state.
-        if (payment.getStatus() == Payment.Status.EXPIRED) {
-            throw new HandoffException(HandoffResponse.Status.ERR_EXPIRED);
-        } else if (payment.getStatus() != Payment.Status.AWAITING_HANDOFF) {
-            throw new HandoffException(HandoffResponse.Status.ERR_ALREADY_PROVIDED);
-        }
-        
-        // Attempt to handoff block
-        if (handoff.getBlockContents() != null) {
-            handoffBlock(payment, handoff.getBlockContents());
-        } else if (handoff.getHash() != null) {
-            handoffHash(payment.getId(), handoff.getHash());
-        } else {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "No block or hash provided.");
-        }
-        
-        // Create success response
-        return new HandoffResponse(HandoffResponse.Status.ACCEPTED,
-                formatResultString(handoffProperties.getSuccessMessage(), payment),
-                formatResultString(handoffProperties.getSuccessLabel(), payment));
+    @Autowired private BlockProcessingService blockProcessingService;
+
+
+    public String encodeHandoffUri(PaymentInvoice invoice) {
+        HandoffPaymentRequest request = new HandoffPaymentRequest(
+                invoice.getId(),
+                invoice.getDestination().toAddress(),
+                invoice.getAmount().toRawString());
+        request.setWorkRequired(!handoffProperties.getGenerateWork());
+        request.setVariableAmount(request.isVariableAmount());
+        request.addChannel(new HttpsHandoffChannel(handoffProperties.getUrl()));
+        return request.encodeUri();
     }
-    
+
+
     /**
-     * Processes and accepts the offered block handoff.
+     * Validates, processes and publishes the offered block.
      */
-    public void handoffBlock(Payment payment, ObjectNode blockJson) {
-        Optional<SendBlockWrapper> blockWrapper = SendBlockWrapper.tryParse(blockJson);
-        if (blockWrapper.isEmpty()) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid or unsupported block.");
+    public HandoffDispatchResponse processBlockHandoff(HandoffDispatchRequest handoff) {
+        log.debug("Processing incoming handoff for payment {}", handoff.getPaymentId());
+
+        // Locate invoice matching given ID
+        if (handoff.getPaymentId() == null) {
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INVALID, "No payment ID provided.");
         }
-        validateBlockContents(payment, blockWrapper.get());
-        registerHandoff(payment.getId(), blockWrapper.get().getContents().getHash());
-        processBlock(payment.getId(), blockWrapper.get().getContents());
+        PaymentInvoice invoice;
+        try {
+            invoice = paymentService.getInvoice(UUID.fromString(handoff.getPaymentId()));
+        } catch (InvoiceNotFoundException | IllegalArgumentException e) {
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INVALID, "Payment is unrecognized.");
+        }
+
+        // Parse and validate block contents
+        if (handoff.getBlockContents() == null) {
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INVALID, "No block provided.");
+        }
+        SendBlock block = parseAndValidateBlock(invoice, handoff.getBlockContents());
+
+        // Accept handoff into database
+        acceptHandoff(new PaymentTransaction(block.getHash(), block.getAmount(), invoice));
+
+        // Publish block and watch for confirmation
+        blockProcessingService.publishAndMonitorConfirmation(block);
+
+        // Return success response
+        return new HandoffDispatchResponse(HandoffDispatchResponse.Status.ACCEPTED,
+                formatResultString(handoffProperties.getSuccessMessage(), invoice),
+                formatResultString(handoffProperties.getSuccessLabel(), invoice));
     }
+
     
     /** Performs preliminary block property and state validation, throwing a HandoffException if invalid. */
-    private void validateBlockContents(Payment payment, SendBlockWrapper block) {
+    private SendBlock parseAndValidateBlock(PaymentInvoice invoice, ObjectNode blockJson) {
+        // Parse the block
+        SendBlock block = SendBlock.tryParse(blockJson)
+                .orElseThrow(() -> new HandoffException(
+                        HandoffDispatchResponse.Status.ERR_INVALID, "Invalid or unsupported block."));
+
         // Ensure block is sending to correct account
-        if (!block.getDestination().equalsIgnorePrefix(payment.getDepositAccount())) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Incorrect destination.");
-        }
-        Optional<ResponseAccountInfo> accountInfo = rpcService.getAccountInfo(block.getAccount());
+        if (!block.getDestination().equalsIgnorePrefix(invoice.getDestination()))
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INVALID, "Incorrect destination.");
         // Check that the account which created the block exists
-        if (accountInfo.isEmpty()) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid block.");
-        }
-        // Ensure block doesn't already exist (as frontier, at least - if it exists behind the frontier, then it will
-        // be caught by the previous field check performed after).
-        if (block.getContents().getHash().equalsValue(accountInfo.get().getFrontierBlockHash())) {
-            throw new HandoffException(HandoffResponse.Status.ERR_BLOCK_ALREADY_PUBLISHED);
-        }
-        // Check previous == frontier
-        if (!block.getPrevious().equalsValue(accountInfo.get().getFrontierBlockHash())) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect previous.");
-        }
+        Optional<ResponseAccountInfo> accountInfo = rpcService.getAccountInfo(block.getAccount());
+        if (accountInfo.isEmpty())
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INVALID, "Invalid block.");
+        // Ensure block doesn't already exist (as frontier, at least - if it exists before the frontier, then it will
+        // be caught rejected at the next stage).
+        if (block.getContents().getHash().equalsValue(accountInfo.get().getFrontierBlockHash()))
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_BLOCK_ALREADY_PUBLISHED);
+        // Check that block comes after head block
+        if (!block.getPrevious().equalsValue(accountInfo.get().getFrontierBlockHash()))
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect previous.");
         // Check that balance has decreased (block balance < account balance)
-        if (block.getBalance().compareTo(accountInfo.get().getBalance()) >= 0) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect balance.");
-        }
-        // Ensure sending amount matches the payment amount
-        NanoAmount amount = accountInfo.get().getBalance().subtract(block.getBalance());
-        if (!amount.equals(payment.getAmount())) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INCORRECT_BLOCK_AMOUNT);
-        }
+        if (block.getBalance().compareTo(accountInfo.get().getBalance()) >= 0)
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INCORRECT_BLOCK_STATE, "Incorrect balance.");
+        // Calculate block amount
+        block.setAmount(accountInfo.get().getBalance().subtract(block.getBalance()));
+        // Ensure block is sending right amount
+        if ((invoice.isExactAmount() && !block.getAmount().equals(invoice.getAmount())) ||
+                block.getAmount().compareTo(invoice.getAmount()) < 0)
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_INCORRECT_AMOUNT);
         // Ensure that work difficulty is sufficient
         if (!rpcService.isWorkValidForSend(block.getContents())) {
-            if (handoffProperties.getWorkGen()) {
+            if (handoffProperties.getGenerateWork()) {
                 // Work will be computed during processing
                 block.getContents().setWorkSolution(null);
-            } else if (block.getContents().getWorkSolution() != null) {
-                // Difficulty of provided work too low
-                throw new HandoffException(HandoffResponse.Status.ERR_INSUFFICIENT_WORK);
             } else {
-                // No work provided
-                throw new HandoffException(HandoffResponse.Status.ERR_INSUFFICIENT_WORK,
-                        "Service doesn't support work generation.");
+                // Difficulty of provided work too low
+                throw new HandoffException(HandoffDispatchResponse.Status.ERR_INSUFFICIENT_WORK);
             }
         }
-    }
-    
-    /**
-     * Processes and accepts the offered hash handoff.
-     */
-    public void handoffHash(UUID id, String rawHash) {
-        HexData hashHex;
-        try {
-            hashHex = new HexData(rawHash.toUpperCase(), 32); // 32 bytes == 64 hex chars
-        } catch (IllegalArgumentException e) {
-            throw new HandoffException(HandoffResponse.Status.ERR_INVALID, "Invalid hash.");
-        }
-        registerHandoff(id, hashHex);
+        return block;
     }
     
     /**
      * Associates the given block hash with the specified payment ID, and watches the block for confirmation.
      */
-    public void registerHandoff(UUID id, HexData hash) {
+    public void acceptHandoff(PaymentTransaction transaction) {
         // Verify hash doesn't exist in network (must be published after handoff)
-        if (rpcService.getBlockInfo(hash).isPresent()) {
-            throw new HandoffException(HandoffResponse.Status.ERR_BLOCK_ALREADY_PUBLISHED);
+        if (rpcService.getBlockInfo(transaction.getBlockHash()).isPresent()) {
+            throw new HandoffException(HandoffDispatchResponse.Status.ERR_BLOCK_ALREADY_PUBLISHED);
         }
+
         // Attempt to associate handoff with payment in database
-        Payment paymentReq = paymentService.acceptHandoff(id, hash);
-        log.info("Accepted handoff hash {} for payment #{}", hash, paymentReq.getId());
-        // Register payment and hash to watcher service
-        blockWatcherService.watch(paymentReq);
-    }
-    
-    /**
-     * Asynchronously publish the block to the Nano network, generating work if required.
-     */
-    public void processBlock(UUID paymentId, Block block) {
-        blockPublishExecutor.submit(() -> {
-            try {
-                if (block.getWorkSolution() == null) {
-                    rpcService.generateWork(block);
-                }
-                rpcService.publishBlock(block);
-            } catch (RpcQueryException e) {
-                log.error("Failed to publish block.", e);
-                paymentService.setPaymentState(paymentId, Payment.Status.INVALID_BLOCK);
-            }
-        });
+        paymentService.registerTransaction(transaction);
+        log.info("Accepted handoff (block {}) for payment #{}",
+                transaction.getBlockHash(), transaction.getInvoice().getId());
     }
     
     
-    private String formatResultString(String str, Payment payment) {
+    private String formatResultString(String str, PaymentInvoice payment) {
         return str == null ? null : str
                 .replace("{id}", payment.getId().toString())
                 .replace("{shortId}", payment.getId().toString().substring(24, 36));

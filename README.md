@@ -1,4 +1,10 @@
-# Nano Payment Server (Java Implementation)
+# Nano Payment Server
+A [Nano](https://nano.org) payment processor application which implements the new "Block Handoff" proof-of-concept.
+
+This project may be used as a demonstration and reference implementation on how to process and validate Nano payments 
+ using the Handoff payment model, or you may incorporate it in your own live projects by communicating through the
+ exposed HTTP API.
+
 
 ## TODO
 - Release
